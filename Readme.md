@@ -2,9 +2,8 @@
 
 ## réalisé par 
 - Marino
-- Alexandre Reffert
 - Théo
-- Loic Collatuzo
+- Paolo
 
 ### Pré-requis
     Guide d'installasion Golang  et Raylib
@@ -19,5 +18,5 @@
 U
 ---
 ### But du jeu
-    Pour pouvoir terminer le jeux, vous devrez tuer les 4 monstres afin de délivrer les 4 princesses des Royaumes Oubliés
-    Vous pourrez retrouvez un menu avec chaque touche du jeu en appuyant sur la touche 'ECHAP'
+    Il s'agit d'un pendu.
+    Le joueur doit trouver le bon mot avant de perdre toutes ses vies
