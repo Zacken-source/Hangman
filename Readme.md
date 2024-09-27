@@ -1,4 +1,4 @@
-# Projet 4 Saken Kingdom
+# Projet Hangman
 
 ## réalisé par 
 - Marino
