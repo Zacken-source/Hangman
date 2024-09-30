@@ -1,6 +1,5 @@
 package main
 
-
 import (
 	"fmt"
 	"math/rand"
@@ -8,45 +7,76 @@ import (
 )
 
 func main() {
-	listeLVL1 := []string{"comme", "disais", "voir", "ensemble", "mots", "locutions", "qui", "sont", "vraiment", "par", "quotidien", "peu", "plus", "que", "habitude", "hein", "panique", "prends", "ton", "temps", "regarde", "plusieurs", "fois", "utilise", "fiche", "PDF", "avec", "cette", "pour", "bien", "assimiler", "bref", "stress"}
-	//listeLVL2 := []string{"comme", "disais", "voir","ensemble","mots","locutions","qui","sont","vraiment","par","quotidien","peu","plus","que","habitude","hein","panique","prends","ton","temps","regarde","plusieurs","fois","utilise","fiche","PDF","avec","cette","pour","bien","assimiler","bref","stress"}
+	listeLVL1 := []string{"abcdefghijklmnopqrstuvwxyzéèàùâ", "test"}
 	word := listeLVL1[rand.Intn(len(listeLVL1))]
-	//word2 := listeLVL2 [rand.Intn(len(listeLVL2))]
-	//count := len(word)
-	blanks := []string{}
-	lives := 2 * len(word)
-	for range word {
-		blanks = append(blanks, "_")
-	}
-	for {
-		fmt.Printf("word: %s Letter: ", strings.Join(blanks, " "))
 
+	// Convertir le mot et les blanks en slices de runes pour gérer les caractères accentués
+	wordRunes := []rune(word)
+	blanks := make([]rune, len(wordRunes))
+	for i := range blanks {
+		blanks[i] = '_'
+	}
+
+	lives := 10
+
+	// Jeu
+	for {
+		// Afficher les blanks avec les lettres devinées
+		fmt.Printf("word: %s Letter: ", string(blanks))
+
+		// Lire l'entrée utilisateur
 		var input string
 		fmt.Scanln(&input)
 		input = strings.ToLower(input)
-		fmt.Println(input)
-		for _, inputLetter := range input {
+
+		// Vérification si l'utilisateur n'entre rien
+		if len(input) == 0 {
+			// Réduire de 3 vies si aucune entrée n'est faite
+			lives -= 3
+			fmt.Println("Sérieusement !?")
+		// Vérification si l'utilisateur essaie un mot entier
+		} else if len(input) > 1 {
+			// Si le mot entré est correct
+			if input == word {
+				fmt.Printf("Gagné! Le mot était : %s\n", word)
+				break
+			} else {
+				// Si le mot est incorrect, perdre 2 vies
+				lives -= 2
+				fmt.Println("Mot incorrect!")
+			}
+		} else {
+			// Si l'utilisateur entre une seule lettre, traiter chaque lettre
 			correctGuess := false
 
-			for i, wordLetter := range word {
-				if inputLetter == wordLetter {
-					blanks[i] = string(inputLetter)
+			// Comparaison des lettres devinées avec le mot
+			for i, wordLetter := range wordRunes {
+				if rune(input[0]) == wordLetter {
+					blanks[i] = wordLetter // Remplacer le "_" par la lettre correcte
 					correctGuess = true
-
+					fmt.Println("bon choix")
 				}
 			}
-			if correctGuess == false {
-				lives--
+
+			if !correctGuess {
+				lives-- // Diminuer les vies si la lettre n'est pas correcte
+				fmt.Println("Lettre incorrecte!")
 			}
 		}
+
+		// Vérifier si le joueur a perdu
 		if lives <= 0 {
-			fmt.Printf("shesh you lose\n")
+			fmt.Printf("Perdu! Le mot était : %s\n", word)
 			break
 		}
-		if word == strings.Join(blanks, "") {
-			fmt.Printf("shit you won\n")
+
+		// Vérifier si le joueur a gagné (toutes les lettres sont découvertes)
+		if string(wordRunes) == string(blanks) {
+			fmt.Printf("Gagné! Le mot était : %s\n", word)
 			break
 		}
+
+		// Afficher le nombre d'essais restants
+		fmt.Printf("%d attempts remaining.\n", lives)
 	}
 }
-
