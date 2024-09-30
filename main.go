@@ -17,6 +17,24 @@ func main() {
 		blanks[i] = '_'
 	}
 
+		// Calculer le nombre de lettres à révéler
+		numLettersToReveal := (len(wordRunes) / 2) - 1
+		if numLettersToReveal < 0 {
+			numLettersToReveal = 0 // Assurez-vous qu'il n'y ait pas de nombre négatif
+		}
+	
+		// Choisir des indices aléatoires pour révéler les lettres
+		revealedIndices := make(map[int]struct{}) // Utiliser un map pour éviter les doublons
+		for len(revealedIndices) < numLettersToReveal {
+			index := rand.Intn(len(wordRunes))
+			revealedIndices[index] = struct{}{}
+		}
+	
+		// Remplacer les underscores par les lettres révélées
+		for index := range revealedIndices {
+			blanks[index] = wordRunes[index]
+		}
+
 	lives := 10
 
 	// Jeu
