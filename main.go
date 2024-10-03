@@ -1,16 +1,24 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
+	"os"
 	"strings"
+	"time"
 )
 
-func main() {
-	listeLVL1 := []string{"abcdefghijklmnopqrstuvwxyzéèàùâ", "test"}
-	word := listeLVL1[rand.Intn(len(listeLVL1))]
 
-	// Convertir le mot et les blanks en slices de runes pour gérer les caractères accentués
+
+func main() {
+	rand.Seed(time.Now().UnixNano()) // Initialise le générateur de nombres aléatoires
+	word, err := ReadLineFromWords(rand.Intn(2))
+	if err != nil {
+		fmt.Println("Erreur lors de la lecture du mot :", err)
+		return
+	}
+
 	wordRunes := []rune(word)
 	blanks := make([]rune, len(wordRunes))
 	for i := range blanks {
@@ -51,6 +59,7 @@ func main() {
 		if len(input) == 0 {
 			// Réduire de 3 vies si aucune entrée n'est faite
 			lives -= 3
+			PrintHangman(lives)
 			fmt.Println("Sérieusement !?")
 		// Vérification si l'utilisateur essaie un mot entier
 		} else if len(input) > 1 {
@@ -61,6 +70,7 @@ func main() {
 			} else {
 				// Si le mot est incorrect, perdre 2 vies
 				lives -= 2
+				PrintHangman(lives)
 				fmt.Println("Mot incorrect!")
 			}
 		} else {
@@ -73,12 +83,14 @@ func main() {
 					blanks[i] = wordLetter // Remplacer le "_" par la lettre correcte
 					correctGuess = true
 					fmt.Println("bon choix")
+					PrintHangman(lives)
 				}
 			}
 
 			if !correctGuess {
 				lives-- // Diminuer les vies si la lettre n'est pas correcte
 				fmt.Println("Lettre incorrecte!")
+				PrintHangman(lives)
 			}
 		}
 
@@ -97,4 +109,100 @@ func main() {
 		// Afficher le nombre d'essais restants
 		fmt.Printf("%d attempts remaining.\n", lives)
 	}
+
+}
+func PrintHangman(n int){
+	// Ouvrir le fichier
+	file, err := os.Open("hangman.txt")
+	if err != nil {
+		fmt.Println("Erreur lors de l'ouverture du fichier:", err)
+		return
+	}
+	defer file.Close()
+
+	// Créer un scanner pour lire le fichier ligne par ligne
+	scanner := bufio.NewScanner(file)
+	var startLine, endLine int
+	if n == 9 {
+		startLine, endLine = 0, 7
+	} else if n == 8 {
+		startLine, endLine = 7, 14
+	} else if n == 7 {
+		startLine, endLine = 14, 21
+	} else if n == 6 {
+		startLine, endLine = 21, 28
+	} else if n == 5 {
+		startLine, endLine = 28, 35
+	} else if n == 4 {
+		startLine, endLine = 35, 42
+	} else if n == 3 {
+		startLine, endLine = 42, 49
+	} else if n == 2 {
+		startLine, endLine = 49, 56
+	} else if n == 1 {
+		startLine, endLine = 56, 63
+	} else {
+		fmt.Println("Valeur de n non valide.")
+		return
+	}
+
+	// Lire et afficher les lignes appropriées
+	lineCount := 0
+	for scanner.Scan() {
+		if lineCount >= startLine && lineCount < endLine {
+			fmt.Println(scanner.Text())
+		}
+		lineCount++
+		if lineCount >= endLine {
+			break
+		}
+	}
+}
+
+func ReadLineFromWords(n int) (string, error) {
+	var filename string
+	if n == 0 {
+		filename = "words.txt"
+	} else {
+		filename = "words2.txt"
+	}
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	// Compter le nombre de lignes
+	lineCount := 0
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lineCount++
+	}
+	
+	// Vérifiez s'il y a eu des erreurs lors de la lecture du fichier
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	if lineCount == 0 {
+		return "", fmt.Errorf("le fichier est vide")
+	}
+
+	// Réinitialiser le scanner pour relire le fichier
+	file.Seek(0, 0) // Revenir au début du fichier
+	scanner = bufio.NewScanner(file)
+
+	// Générer un nombre aléatoire valide
+	lineNumber := rand.Intn(lineCount) + 1 // +1 pour que ça commence à 1
+
+	currentLine := 1
+	for scanner.Scan() {
+		if currentLine == lineNumber {
+			return scanner.Text(), nil
+		}
+		currentLine++
+	}
+
+	return "", fmt.Errorf("erreur inconnue")
 }
