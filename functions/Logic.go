@@ -78,6 +78,7 @@ func Logic() {
 			// Si le mot entré est correct
 			if input == word {
 				fmt.Println(victoryMessage) // Afficher le message de victoire
+				fmt.Printf("Le mot était : %s\n", word)
 				break
 			} else {
 				// Si le mot est incorrect, perdre 2 vies
@@ -116,6 +117,7 @@ func Logic() {
 		// Vérifier si le joueur a gagné (toutes les lettres sont découvertes)
 		if string(wordRunes) == string(blanks) {
 			fmt.Println(victoryMessage) // Afficher le message de victoire
+			fmt.Printf("Le mot était : %s\n", word)
 			break
 		}
 
