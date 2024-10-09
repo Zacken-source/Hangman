@@ -10,13 +10,27 @@ import (
 	"time"
 )
 
-func Logic() {
-	victoryMessage, err := readMessage("ASKIIDisplay/victory.txt")
+
+func Logic(dictionaryPath string) {
+	// Lire le fichier hangman.txt
+	hangmanStages, err := readHangmanStages("ASKII Display/hangman.txt")
+	if err != nil {
+		fmt.Println("Erreur lors de la lecture du fichier :", err)
+		return
+	}
+
+	// Lire le fichier victory.txt
+	victoryMessage, err := readVictoryMessage("ASKII Display/victory.txt")
+
 	if err != nil {
 		fmt.Println("Erreur lors de la lecture du fichier de victoire :", err)
 		return
 	}
-	LoseMessage, err := readMessage("ASKIIDisplay/lose.txt")
+
+
+	// Lire les mots du dictionnaire en utilisant le chemin passé en argument
+	dictionaryWords, err := readDictionaryWords(dictionaryPath)
+
 	if err != nil {
 		fmt.Println("Erreur lors de la lecture du fichier de victoire :", err)
 		return
@@ -34,6 +48,8 @@ func Logic() {
 	for i := range blanks {
 		blanks[i] = '_'
 	}
+
+	guessedLetters := make(map[rune]struct{})
 
 	// Calculer le nombre de lettres à révéler
 	numLettersToReveal := (len(wordRunes) / 2) - 1
@@ -58,7 +74,8 @@ func Logic() {
 	// Jeu
 	for {
 		// Afficher les blanks avec les lettres devinées
-		fmt.Printf("word: %s Letter: ", string(blanks))
+		fmt.Printf("Word: [%s], Lettres déjà proposées: %s\n", string(blanks), getGuessedLetters(guessedLetters))
+		fmt.Print("Entrez une lettre: ")
 
 		// Lire l'entrée utilisateur
 		var input string
@@ -87,6 +104,15 @@ func Logic() {
 				fmt.Println("Mot incorrect!")
 			}
 		} else {
+
+			// Vérification si la lettre a déjà été proposée (avant de l'ajouter à guessedLetters)
+			if _, exists := guessedLetters[rune(input[0])]; exists {
+				fmt.Println("Vous avez déjà proposé cette lettre. Essayez une autre.")
+				continue
+			}
+
+			// Ajouter la lettre à guessedLetters après avoir vérifié si elle a déjà été proposée
+			guessedLetters[rune(input[0])] = struct{}{}
 			// Si l'utilisateur entre une seule lettre, traiter chaque lettre
 			correctGuess := false
 
@@ -116,6 +142,7 @@ func Logic() {
 
 		// Vérifier si le joueur a gagné (toutes les lettres sont découvertes)
 		if string(wordRunes) == string(blanks) {
+			fmt.Printf("Le mot était : %s\n", word)
 			fmt.Println(victoryMessage) // Afficher le message de victoire
 			fmt.Printf("Le mot était : %s\n", word)
 			break
@@ -239,4 +266,13 @@ func removeAccents(input string) string {
 		"ç", "c",
 	)
 	return replacer.Replace(input)
+}
+
+// Fonction pour extraire les lettres déjà proposées et les afficher sous forme de chaîne
+func getGuessedLetters(m map[rune]struct{}) string {
+	letters := make([]string, 0, len(m))
+	for k := range m {
+		letters = append(letters, string(k))
+	}
+	return strings.Join(letters, ", ")
 }
