@@ -1,11 +1,13 @@
 package hangman
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"strings"
 	"time"
+	"os"
 )
 
 // Dictionnaire de correspondance entre les lettres accentuées et non accentuées
@@ -16,6 +18,14 @@ var accentMap = map[rune][]rune{
 	'o': {'o', 'ô', 'ö'},
 	'i': {'i', 'î', 'ï'},
 	'c': {'c', 'ç'},
+}
+
+// Structure pour représenter l'état du jeu
+type GameState struct {
+	Word           string            `json:"word"`
+	Blanks         []rune           `json:"blanks"`
+	GuessedLetters map[rune]struct{} `json:"guessed_letters"`
+	Lives          int               `json:"lives"`
 }
 
 
@@ -229,4 +239,142 @@ func containsAccentMatch(input, wordLetter rune) bool {
 	}
 	// Comparer directement si ce n'est pas une lettre accentuée
 	return input == wordLetter
+}
+
+// Fonction pour sauvegarder l'état du jeu dans un fichier
+func saveGame(gameState GameState) error {
+	// Sérialiser l'état du jeu en JSON
+	data, err := json.MarshalIndent(gameState, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// Écrire les données dans le fichier de sauvegarde
+	return ioutil.WriteFile("save/save.txt", data, 0644)
+}
+
+// Fonction pour charger et démarrer le jeu depuis une sauvegarde
+func StartFromSave(saveFile string, hangmanStages []string) error {
+    // Vérifier si le fichier de sauvegarde existe
+    if _, err := os.Stat(saveFile); os.IsNotExist(err) {
+        return fmt.Errorf("le fichier de sauvegarde n'existe pas")
+    }
+
+    // Lire le fichier de sauvegarde
+    data, err := ioutil.ReadFile(saveFile)
+    if err != nil {
+        return err
+    }
+
+    // Décoder le contenu du fichier en un objet GameState
+    var gameState GameState
+    err = json.Unmarshal(data, &gameState)
+    if err != nil {
+        return err
+    }
+
+    // Continuer le jeu à partir de cet état
+    return continueGame(gameState, hangmanStages)
+}
+
+func continueGame(gameState GameState, hangmanStages []string) error {
+    word := gameState.Word
+    blanks := gameState.Blanks
+    guessedLetters := gameState.GuessedLetters
+    lives := gameState.Lives
+
+    // Convertir le mot en runes pour gérer les caractères accentués
+    wordRunes := []rune(word)
+
+    // Reprendre la logique du jeu à partir de cet état
+    for {
+        // Afficher les blanks avec les lettres devinées
+        fmt.Printf("Mot: [%s], Lettres déjà proposées: %s\n", string(blanks), getGuessedLetters(guessedLetters))
+        fmt.Print("Entrez une lettre ou 'stop' pour sauvegarder: ")
+
+        // Lire l'entrée utilisateur
+        var input string
+        fmt.Scanln(&input)
+        input = strings.ToLower(strings.TrimSpace(input))
+
+        // Gérer le cas où l'utilisateur entre "stop"
+        if input == "stop" {
+            // Sauvegarder l'état du jeu
+            err := saveGame(GameState{
+                Word:           word,
+                Blanks:         blanks,
+                GuessedLetters: guessedLetters,
+                Lives:          lives,
+            })
+            if err != nil {
+                return fmt.Errorf("erreur lors de la sauvegarde: %v", err)
+            }
+            fmt.Println("Jeu sauvegardé dans save/save.txt")
+            break
+        }
+
+        // Vérifier la validité de l'entrée
+        if len(input) == 0 {
+            lives -= 3
+            fmt.Println("Sérieusement !? Vous devez entrer une lettre.")
+            continue
+        } else if len(input) > 1 {
+            // Vérification si l'utilisateur entre un mot
+            if removeAccents(input) == removeAccents(word) {
+                fmt.Println("Bravo! Vous avez gagné !")
+                fmt.Printf("Le mot était : %s\n", word)
+                break
+            } else {
+                lives -= 2
+                fmt.Println("Mot incorrect!")
+            }
+            continue
+        }
+
+        // Traitement d'une seule lettre
+        if _, exists := guessedLetters[rune(input[0])]; exists {
+            fmt.Println("Vous avez déjà proposé cette lettre. Essayez une autre.")
+            continue
+        }
+
+        // Ajouter la lettre à guessedLetters
+        guessedLetters[rune(input[0])] = struct{}{}
+        correctGuess := false
+
+        // Comparaison des lettres devinées avec le mot
+        for i, wordLetter := range wordRunes {
+            if containsAccentMatch(rune(input[0]), wordLetter) {
+                blanks[i] = wordLetter // Remplacer le "_" par la lettre correcte
+                correctGuess = true
+                fmt.Println("Bon choix")
+            }
+        }
+
+        if !correctGuess {
+            lives-- // Diminuer les vies si la lettre n'est pas correcte
+            fmt.Println("Lettre incorrecte!")
+        }
+
+        // Vérifier le nombre de vies restantes
+        if lives <= 0 {
+            fmt.Printf("Perdu! Le mot était : %s\n", word)
+            break
+        }
+
+        // Vérifier si le joueur a gagné
+        if string(wordRunes) == string(blanks) {
+            fmt.Println("Vous avez gagné !")
+            break
+        }
+
+        // Afficher l'état du Hangman en fonction des vies restantes
+        hangmanIndex := len(hangmanStages) - lives - 1
+        if hangmanIndex >= 0 && hangmanIndex < len(hangmanStages) {
+            fmt.Println(hangmanStages[hangmanIndex])
+        }
+
+        // Afficher le nombre d'essais restants
+        fmt.Printf("%d tentatives restantes.\n", lives)
+    }
+    return nil
 }
