@@ -8,6 +8,17 @@ import (
 	"time"
 )
 
+// Dictionnaire de correspondance entre les lettres accentuées et non accentuées
+var accentMap = map[rune][]rune{
+	'e': {'e', 'é', 'è', 'ê', 'ë'},
+	'a': {'a', 'à', 'â', 'ä'},
+	'u': {'u', 'ù', 'û', 'ü'},
+	'o': {'o', 'ô', 'ö'},
+	'i': {'i', 'î', 'ï'},
+	'c': {'c', 'ç'},
+}
+
+
 func Logic(dictionaryPath string) {
 	// Lire le fichier hangman.txt
 	hangmanStages, err := readHangmanStages("ASKII Display/hangman.txt")
@@ -33,9 +44,6 @@ func Logic(dictionaryPath string) {
 	// Choisir un mot aléatoire à partir du dictionnaire
 	rand.Seed(time.Now().UnixNano())
 	word := dictionaryWords[rand.Intn(len(dictionaryWords))]
-
-	// Fonction pour simplifier les caractères accentués
-	word = removeAccents(strings.ToLower(word))
 
 	// Convertir le mot et les blanks en slices de runes pour gérer les caractères accentués
 	wordRunes := []rune(word)
@@ -87,8 +95,10 @@ func Logic(dictionaryPath string) {
 			fmt.Println("Sérieusement !?")
 		} else if len(input) > 1 {
 			// Si le mot entré est correct
-			if input == word {
+			// Si le mot entré est correct (comparaison sans accents)
+			if removeAccents(input) == removeAccents(word) {
 				fmt.Println(victoryMessage) // Afficher le message de victoire
+				fmt.Printf("Le mot était : %s\n", word)
 				break
 			} else {
 				// Si le mot est incorrect, perdre 2 vies
@@ -96,21 +106,19 @@ func Logic(dictionaryPath string) {
 				fmt.Println("Mot incorrect!")
 			}
 		} else {
-
-			// Vérification si la lettre a déjà été proposée (avant de l'ajouter à guessedLetters)
+			// Vérification si la lettre a déjà été proposée
 			if _, exists := guessedLetters[rune(input[0])]; exists {
 				fmt.Println("Vous avez déjà proposé cette lettre. Essayez une autre.")
 				continue
 			}
 
-			// Ajouter la lettre à guessedLetters après avoir vérifié si elle a déjà été proposée
+			// Ajouter la lettre à guessedLetters
 			guessedLetters[rune(input[0])] = struct{}{}
-			// Si l'utilisateur entre une seule lettre, traiter chaque lettre
 			correctGuess := false
 
 			// Comparaison des lettres devinées avec le mot
 			for i, wordLetter := range wordRunes {
-				if rune(input[0]) == wordLetter {
+				if containsAccentMatch(rune(input[0]), wordLetter) {
 					blanks[i] = wordLetter // Remplacer le "_" par la lettre correcte
 					correctGuess = true
 					fmt.Println("bon choix")
@@ -142,8 +150,8 @@ func Logic(dictionaryPath string) {
 
 		// Vérifier si le joueur a gagné (toutes les lettres sont découvertes)
 		if string(wordRunes) == string(blanks) {
-			fmt.Printf("Le mot était : %s\n", word)
 			fmt.Println(victoryMessage) // Afficher le message de victoire
+			fmt.Printf("Le mot était : %s\n", word)
 			break
 		}
 
@@ -206,4 +214,19 @@ func getGuessedLetters(m map[rune]struct{}) string {
 		letters = append(letters, string(k))
 	}
 	return strings.Join(letters, ", ")
+}
+
+// Fonction pour vérifier si une lettre non accentuée correspond à une lettre accentuée
+func containsAccentMatch(input, wordLetter rune) bool {
+	// Si la lettre sans accent existe dans le dictionnaire des accents
+	if accentedLetters, exists := accentMap[input]; exists {
+		// Vérifier si la lettre du mot fait partie des lettres accentuées correspondantes
+		for _, accentedLetter := range accentedLetters {
+			if wordLetter == accentedLetter {
+				return true
+			}
+		}
+	}
+	// Comparer directement si ce n'est pas une lettre accentuée
+	return input == wordLetter
 }
