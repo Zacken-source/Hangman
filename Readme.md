@@ -14,6 +14,8 @@
 
     Une fois intallé, il vous faut vous diriger dans le dossier du projet et effectuer la commande suivant : go run .
 
+    Pour l'aide effectuer la commande suivant : go run . -help
+    Ou : go run . -h
 
 U
 ---
